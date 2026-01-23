@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 
 	"github.com/icarus-itcs/lazycap/internal/cap"
@@ -258,9 +259,7 @@ func runMCPServer() error {
 
 // isTerminal checks if the given file descriptor is a terminal
 func isTerminal(fd uintptr) bool {
-	// Use syscall to check if fd is a tty
-	_, _, err := syscall.Syscall(syscall.SYS_IOCTL, fd, syscall.TIOCGETA, 0)
-	return err == 0
+	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
 }
 
 // mcpContext provides context for MCP operations without the full UI
