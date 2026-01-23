@@ -308,7 +308,7 @@ func RunAction(id string) Result {
 		podsPath := filepath.Join(cwd, "ios/Pods")
 		removeDir(podsPath, "Pods")
 		// Remove Podfile.lock
-		os.Remove(filepath.Join(cwd, "ios/Podfile.lock"))
+		_ = os.Remove(filepath.Join(cwd, "ios/Podfile.lock"))
 		return Result{Success: true, Message: "CocoaPods cache cleared", Details: "Run 'pod install' in ios/ folder to reinstall"}
 
 	case "pod-deintegrate":
@@ -363,7 +363,7 @@ func RunAction(id string) Result {
 		avds := strings.Split(strings.TrimSpace(string(output)), "\n")
 		for _, avd := range avds {
 			if avd != "" {
-				exec.Command("emulator", "-avd", avd, "-wipe-data", "-no-window", "-no-boot-anim").Start()
+				_ = exec.Command("emulator", "-avd", avd, "-wipe-data", "-no-window", "-no-boot-anim").Start()
 			}
 		}
 		return Result{Success: true, Message: fmt.Sprintf("Wiped %d emulators", len(avds))}
@@ -377,7 +377,7 @@ func RunAction(id string) Result {
 		return runCommand(cwd, "npm", "cache", "clean", "--force")
 
 	case "package-lock":
-		os.Remove(filepath.Join(cwd, "package-lock.json"))
+		_ = os.Remove(filepath.Join(cwd, "package-lock.json"))
 		return runCommand(cwd, "npm", "install")
 
 	// Capacitor
@@ -413,7 +413,7 @@ func RunAction(id string) Result {
 				pids := strings.Split(strings.TrimSpace(string(output)), "\n")
 				for _, pid := range pids {
 					if pid != "" {
-						exec.Command("kill", "-9", pid).Run()
+						_ = exec.Command("kill", "-9", pid).Run()
 						killedCount++
 					}
 				}
@@ -439,11 +439,11 @@ func RunAction(id string) Result {
 		return runCommand(cwd, "watchman", "watch-del-all")
 
 	case "tmp-clean":
-		os.Remove("/tmp/lazycap-debug.log")
+		_ = os.Remove("/tmp/lazycap-debug.log")
 		// Clean any lazycap temp files
 		files, _ := filepath.Glob("/tmp/lazycap-*")
 		for _, f := range files {
-			os.Remove(f)
+			_ = os.Remove(f)
 		}
 		return Result{Success: true, Message: "Temp files cleared"}
 
@@ -456,8 +456,8 @@ func RunAction(id string) Result {
 		removeDir(filepath.Join(cwd, "android/app/build"), "android/app/build")
 		removeDir(filepath.Join(cwd, "dist"), "dist")
 		removeDir(filepath.Join(cwd, "www"), "www")
-		os.Remove(filepath.Join(cwd, "package-lock.json"))
-		os.Remove(filepath.Join(cwd, "ios/Podfile.lock"))
+		_ = os.Remove(filepath.Join(cwd, "package-lock.json"))
+		_ = os.Remove(filepath.Join(cwd, "ios/Podfile.lock"))
 		return Result{Success: true, Message: "Full project clean complete", Details: "Run 'npm install' then 'npx cap sync' to rebuild"}
 
 	case "fresh-install":
@@ -487,7 +487,7 @@ func removeDir(path, name string) Result {
 
 	// Calculate size before removing
 	var size int64
-	filepath.Walk(path, func(_ string, info os.FileInfo, _ error) error {
+	_ = filepath.Walk(path, func(_ string, info os.FileInfo, _ error) error {
 		if info != nil && !info.IsDir() {
 			size += info.Size()
 		}

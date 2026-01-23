@@ -122,7 +122,7 @@ func runDemoMode() error {
 	}
 
 	// Register plugins (still useful for demo)
-	plugins.RegisterAll()
+	_ = plugins.RegisterAll()
 	pluginManager := plugin.NewManager()
 	appContext := plugin.NewAppContext(pluginManager)
 	appContext.SetProject(project)
@@ -177,9 +177,9 @@ func runApp() error {
 		<-sigCh
 		// Save which plugins were running before stopping
 		for _, p := range plugin.All() {
-			pluginManager.SetRunning(p.ID(), p.IsRunning())
+			_ = pluginManager.SetRunning(p.ID(), p.IsRunning())
 		}
-		pluginManager.StopAll()
+		_ = pluginManager.StopAll()
 		os.Exit(0)
 	}()
 
@@ -251,7 +251,7 @@ func runMCPServer() error {
 			continue
 		}
 		response := handleMCPRequest(mcpCtx, line)
-		encoder.Encode(response)
+		_ = encoder.Encode(response)
 	}
 
 	return nil

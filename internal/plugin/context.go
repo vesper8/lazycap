@@ -66,8 +66,8 @@ type EventType string
 
 const (
 	// Lifecycle events
-	EventAppStarted     EventType = "app:started"
-	EventAppStopping    EventType = "app:stopping"
+	EventAppStarted  EventType = "app:started"
+	EventAppStopping EventType = "app:stopping"
 
 	// Device events
 	EventDevicesChanged EventType = "devices:changed"

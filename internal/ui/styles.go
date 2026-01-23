@@ -5,11 +5,11 @@ import "github.com/charmbracelet/lipgloss"
 // Capacitor brand colors
 var (
 	// Primary colors - Capacitor blue
-	capBlue      = lipgloss.Color("#119EFF")
-	capCyan      = lipgloss.Color("#73B7F6")
-	capDark      = lipgloss.Color("#16161D")
-	capLight     = lipgloss.Color("#ECEDEE")
-	capGray      = lipgloss.Color("#4A4A5A")
+	capBlue  = lipgloss.Color("#119EFF")
+	capCyan  = lipgloss.Color("#73B7F6")
+	capDark  = lipgloss.Color("#16161D")
+	capLight = lipgloss.Color("#ECEDEE")
+	capGray  = lipgloss.Color("#4A4A5A")
 
 	// Status colors
 	successColor = lipgloss.Color("#4ADE80")
@@ -50,24 +50,9 @@ func LogoSmall() string {
 
 // Styles
 var (
-	// Base container
-	baseStyle = lipgloss.NewStyle().
-			Background(capDark)
-
-	// Header
-	headerStyle = lipgloss.NewStyle().
-			Foreground(capLight).
-			Bold(true).
-			Padding(0, 1).
-			MarginBottom(1)
-
 	// Project name in header
 	projectStyle = lipgloss.NewStyle().
 			Foreground(capCyan)
-
-	// Subtle divider
-	dividerStyle = lipgloss.NewStyle().
-			Foreground(capGray)
 
 	// Section titles
 	titleStyle = lipgloss.NewStyle().
@@ -87,28 +72,12 @@ var (
 				BorderForeground(capGray).
 				Padding(1, 2)
 
-	// List items
-	itemStyle = lipgloss.NewStyle().
-			Foreground(capLight).
-			PaddingLeft(2)
-
-	selectedStyle = lipgloss.NewStyle().
-			Foreground(capDark).
-			Background(capBlue).
-			Bold(true).
-			PaddingLeft(2).
-			PaddingRight(2)
-
 	// Device status
 	onlineStyle = lipgloss.NewStyle().
 			Foreground(successColor)
 
 	offlineStyle = lipgloss.NewStyle().
 			Foreground(errorColor)
-
-	// Process status
-	runningStyle = lipgloss.NewStyle().
-			Foreground(capCyan)
 
 	successStyle = lipgloss.NewStyle().
 			Foreground(successColor)
@@ -126,10 +95,6 @@ var (
 				Border(lipgloss.RoundedBorder()).
 				BorderForeground(capBlue).
 				Padding(0, 1)
-
-	logTitleStyle = lipgloss.NewStyle().
-			Foreground(capCyan).
-			Bold(true)
 
 	logEmptyStyle = lipgloss.NewStyle().
 			Foreground(mutedColor).
@@ -183,9 +148,6 @@ var (
 				Background(capGray).
 				Padding(0, 1).
 				MarginRight(1)
-
-	// Section title style (for compatibility)
-	sectionTitleStyle = titleStyle
 )
 
 // StatusDot returns a colored dot

@@ -25,7 +25,7 @@ type Plugin interface {
 	OnSettingChange(key string, value interface{})
 
 	// UI Integration (optional)
-	GetStatusLine() string // Short status for the UI header
+	GetStatusLine() string  // Short status for the UI header
 	GetCommands() []Command // Additional keyboard commands
 }
 
@@ -34,7 +34,7 @@ type Setting struct {
 	Key         string
 	Name        string
 	Description string
-	Type        string      // "bool", "string", "int", "choice"
+	Type        string // "bool", "string", "int", "choice"
 	Default     interface{}
 	Choices     []string // For "choice" type
 }

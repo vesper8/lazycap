@@ -22,13 +22,13 @@ const (
 
 // Info contains version update information
 type Info struct {
-	CurrentVersion string
-	LatestVersion  string
+	CurrentVersion  string
+	LatestVersion   string
 	UpdateAvailable bool
-	ReleaseURL     string
-	DownloadURL    string
-	ReleaseNotes   string
-	CheckedAt      time.Time
+	ReleaseURL      string
+	DownloadURL     string
+	ReleaseNotes    string
+	CheckedAt       time.Time
 }
 
 // GitHubRelease represents a GitHub release response
@@ -70,7 +70,7 @@ func Check(currentVersion string) (*Info, error) {
 	if err != nil {
 		return info, fmt.Errorf("failed to check for updates: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return info, fmt.Errorf("GitHub API returned status %d", resp.StatusCode)
@@ -116,10 +116,10 @@ func isNewerVersion(current, latest string) bool {
 	for i := 0; i < 3; i++ {
 		var c, l int
 		if i < len(currentParts) {
-			fmt.Sscanf(currentParts[i], "%d", &c)
+			_, _ = fmt.Sscanf(currentParts[i], "%d", &c)
 		}
 		if i < len(latestParts) {
-			fmt.Sscanf(latestParts[i], "%d", &l)
+			_, _ = fmt.Sscanf(latestParts[i], "%d", &l)
 		}
 		if l > c {
 			return true
@@ -191,7 +191,7 @@ func SelfUpdate(info *Info) error {
 	if err != nil {
 		return fmt.Errorf("failed to download update: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("download failed with status %d", resp.StatusCode)
@@ -204,22 +204,22 @@ func SelfUpdate(info *Info) error {
 		return fmt.Errorf("failed to create temp file: %w", err)
 	}
 	tmpPath := tmpFile.Name()
-	defer os.Remove(tmpPath)
+	defer func() { _ = os.Remove(tmpPath) }()
 
 	// Extract the binary from tar.gz (or handle zip for Windows)
 	if strings.HasSuffix(info.DownloadURL, ".tar.gz") {
 		if err := extractTarGz(resp.Body, tmpFile); err != nil {
-			tmpFile.Close()
+			_ = tmpFile.Close()
 			return fmt.Errorf("failed to extract update: %w", err)
 		}
 	} else {
 		// For zip files or direct binaries
 		if _, err := io.Copy(tmpFile, resp.Body); err != nil {
-			tmpFile.Close()
+			_ = tmpFile.Close()
 			return fmt.Errorf("failed to write update: %w", err)
 		}
 	}
-	tmpFile.Close()
+	_ = tmpFile.Close()
 
 	// Make executable
 	if err := os.Chmod(tmpPath, 0755); err != nil {
@@ -235,20 +235,20 @@ func SelfUpdate(info *Info) error {
 	// Move new binary into place
 	if err := copyFile(tmpPath, execPath); err != nil {
 		// Restore backup on failure
-		os.Rename(backupPath, execPath)
+		_ = os.Rename(backupPath, execPath)
 		return fmt.Errorf("failed to install update: %w", err)
 	}
 
 	// Make sure new binary is executable
 	if err := os.Chmod(execPath, 0755); err != nil {
 		// Restore backup on failure
-		os.Remove(execPath)
-		os.Rename(backupPath, execPath)
+		_ = os.Remove(execPath)
+		_ = os.Rename(backupPath, execPath)
 		return fmt.Errorf("failed to set permissions: %w", err)
 	}
 
 	// Remove backup
-	os.Remove(backupPath)
+	_ = os.Remove(backupPath)
 
 	return nil
 }
@@ -259,7 +259,7 @@ func extractTarGz(r io.Reader, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	defer gzr.Close()
+	defer func() { _ = gzr.Close() }()
 
 	tr := tar.NewReader(gzr)
 
@@ -289,13 +289,13 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer in.Close()
+	defer func() { _ = in.Close() }()
 
 	out, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func() { _ = out.Close() }()
 
 	_, err = io.Copy(out, in)
 	return err

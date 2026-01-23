@@ -365,7 +365,6 @@ func (m *Manager) GetRunningPlugins() []Plugin {
 type EventBus struct {
 	mu          sync.RWMutex
 	subscribers map[EventType][]EventHandler
-	nextID      int
 }
 
 // NewEventBus creates a new event bus

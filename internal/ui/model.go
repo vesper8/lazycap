@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/atotto/clipboard"
@@ -40,28 +39,6 @@ var (
 // - DCS/PM/APC sequences
 // - Simple escape sequences
 var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;?]*[a-zA-Z]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[PX^_].*?\x1b\\|\x1b.`)
-
-// Debug logging
-var (
-	debugFile    *os.File
-	debugFileMu  sync.Mutex
-	debugLogPath = "/tmp/lazycap-debug.log"
-)
-
-func debugLog(format string, args ...interface{}) {
-	debugFileMu.Lock()
-	defer debugFileMu.Unlock()
-	if debugFile == nil {
-		var err error
-		debugFile, err = os.OpenFile(debugLogPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-		if err != nil {
-			return
-		}
-	}
-	timestamp := time.Now().Format("15:04:05.000")
-	fmt.Fprintf(debugFile, "[%s] %s\n", timestamp, fmt.Sprintf(format, args...))
-	debugFile.Sync()
-}
 
 // setTerminalTitle sets the terminal tab/window title
 func setTerminalTitle(title string) tea.Cmd {
@@ -337,7 +314,7 @@ func NewModelWithPlugins(project *cap.Project, pluginMgr *plugin.Manager, appCtx
 			func(processID string) error {
 				for _, p := range m.processes {
 					if p.ID == processID && p.Status == ProcessRunning && p.Cmd != nil && p.Cmd.Process != nil {
-						p.Cmd.Process.Kill()
+						_ = p.Cmd.Process.Kill()
 						return nil
 					}
 				}
@@ -345,7 +322,7 @@ func NewModelWithPlugins(project *cap.Project, pluginMgr *plugin.Manager, appCtx
 			},
 			// GetProcesses
 			func() []plugin.ProcessInfo {
-				var infos []plugin.ProcessInfo
+				infos := make([]plugin.ProcessInfo, 0, len(m.processes))
 				for _, p := range m.processes {
 					var status string
 					switch p.Status {
@@ -746,16 +723,16 @@ func (m *Model) gracefulShutdown() {
 	// Stop all running processes
 	for _, p := range m.processes {
 		if p.Status == ProcessRunning && p.Cmd != nil && p.Cmd.Process != nil {
-			p.Cmd.Process.Kill()
+			_ = p.Cmd.Process.Kill()
 		}
 	}
 
 	// Record which plugins were running before stopping them
 	if m.pluginManager != nil {
 		for _, p := range plugin.All() {
-			m.pluginManager.SetRunning(p.ID(), p.IsRunning())
+			_ = m.pluginManager.SetRunning(p.ID(), p.IsRunning())
 		}
-		m.pluginManager.StopAll()
+		_ = m.pluginManager.StopAll()
 	}
 }
 
@@ -977,7 +954,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keys.Kill):
 			p := m.getSelectedProcess()
 			if p != nil && p.Status == ProcessRunning && p.Cmd != nil && p.Cmd.Process != nil {
-				p.Cmd.Process.Kill()
+				_ = p.Cmd.Process.Kill()
 				p.Status = ProcessCancelled
 				p.EndTime = time.Now()
 				p.AddLog("Killed by user")
@@ -1359,7 +1336,7 @@ func (m *Model) startWebDevCommand() tea.Cmd {
 			// Wait for the server to be ready (poll the port)
 			ready := cap.WaitForPort(port, 30*time.Second)
 			if ready {
-				cap.OpenBrowser(url, browserPath)
+				_ = cap.OpenBrowser(url, browserPath)
 			}
 		}()
 	}
@@ -1421,10 +1398,10 @@ func runWebCmd(processID, command string, port int, host string) tea.Cmd {
 		if hasExtraArgs {
 			// For npm/yarn/pnpm run commands, add -- separator
 			if strings.HasPrefix(command, "npm run") ||
-			   strings.HasPrefix(command, "yarn run") ||
-			   strings.HasPrefix(command, "pnpm run") ||
-			   strings.HasPrefix(command, "yarn ") ||
-			   strings.HasPrefix(command, "pnpm ") {
+				strings.HasPrefix(command, "yarn run") ||
+				strings.HasPrefix(command, "pnpm run") ||
+				strings.HasPrefix(command, "yarn ") ||
+				strings.HasPrefix(command, "pnpm ") {
 				cmdStr += " --"
 			}
 
@@ -1494,7 +1471,7 @@ func runCmdWithPipes(processID string, cmd *exec.Cmd, ch chan string) tea.Msg {
 	}()
 
 	go func() {
-		cmd.Wait()
+		_ = cmd.Wait()
 		close(ch)
 	}()
 
@@ -2096,11 +2073,11 @@ func (m Model) handleSettingsInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		switch setting.Type {
 		case "bool":
 			m.settings.ToggleBool(setting.Key)
-			m.settings.Save()
+			_ = m.settings.Save()
 			m.setStatus(fmt.Sprintf("%s: %v", setting.Name, m.settings.GetBool(setting.Key)))
 		case "choice":
 			newVal := m.settings.CycleChoice(setting.Key, setting.Choices)
-			m.settings.Save()
+			_ = m.settings.Save()
 			displayVal := newVal
 			if displayVal == "" {
 				displayVal = "(auto)"
@@ -2233,10 +2210,9 @@ func (m *Model) renderSettings() string {
 	return strings.Join(lines, "\n")
 }
 
-
 func (m Model) handleDebugInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	categories := debug.GetCategories()
-	
+
 	// Filter actions for current category
 	var currentActions []debug.Action
 	for _, a := range m.debugActions {
@@ -2299,22 +2275,22 @@ func (m Model) handleDebugInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if len(currentActions) == 0 {
 			return m, nil
 		}
-		
+
 		action := currentActions[m.debugCursor]
-		
+
 		// Dangerous actions require confirmation
 		if action.Dangerous && !m.debugConfirm {
 			m.debugConfirm = true
 			m.setStatus("⚠ Press enter again to confirm: " + action.Name)
 			return m, nil
 		}
-		
+
 		// Run the action
 		m.debugConfirm = false
 		result := debug.RunAction(action.ID)
 		m.debugResult = &result
 		m.debugResultTime = time.Now()
-		
+
 		if result.Success {
 			m.setStatus("✓ " + result.Message)
 		} else {
@@ -2382,10 +2358,10 @@ func (m *Model) renderDebug() string {
 			// Highlight selected
 			arrow := lipgloss.NewStyle().Foreground(capBlue).Bold(true).Render("▶")
 			nameStyled := lipgloss.NewStyle().Foreground(capCyan).Bold(true).Render(name)
-			
+
 			lines = append(lines, fmt.Sprintf(" %s%s%s", arrow, dangerIcon, nameStyled))
 			lines = append(lines, fmt.Sprintf("      %s", mutedStyle.Render(desc)))
-			
+
 			// Show confirmation prompt for dangerous actions
 			if action.Dangerous && m.debugConfirm {
 				lines = append(lines, fmt.Sprintf("      %s", lipgloss.NewStyle().Foreground(warnColor).Bold(true).Render("Press enter again to confirm")))
@@ -2548,7 +2524,7 @@ func (m Model) handlePluginsInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				} else {
 					m.setStatus(fmt.Sprintf("Stopped %s", p.Name()))
 					// Remember that this plugin should not auto-start
-					m.pluginManager.SetRunning(p.ID(), false)
+					_ = m.pluginManager.SetRunning(p.ID(), false)
 				}
 			} else {
 				if err := p.Start(); err != nil {
@@ -2556,7 +2532,7 @@ func (m Model) handlePluginsInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				} else {
 					m.setStatus(fmt.Sprintf("Started %s", p.Name()))
 					// Remember that this plugin should auto-start next time
-					m.pluginManager.SetRunning(p.ID(), true)
+					_ = m.pluginManager.SetRunning(p.ID(), true)
 				}
 			}
 		}
@@ -2573,7 +2549,7 @@ func (m Model) handlePluginsInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				if enabled {
 					m.setStatus(fmt.Sprintf("Disabled %s", p.Name()))
 					// Clear the running state when disabled
-					m.pluginManager.SetRunning(p.ID(), false)
+					_ = m.pluginManager.SetRunning(p.ID(), false)
 				} else {
 					m.setStatus(fmt.Sprintf("Enabled %s", p.Name()))
 				}
@@ -2650,7 +2626,7 @@ func (m Model) handlePluginSettingsInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				if b, ok := currentVal.(bool); ok {
 					newVal = !b
 				}
-				m.pluginManager.SetPluginSetting(p.ID(), setting.Key, newVal)
+				_ = m.pluginManager.SetPluginSetting(p.ID(), setting.Key, newVal)
 				p.OnSettingChange(setting.Key, newVal)
 
 				if newVal {
@@ -2750,7 +2726,7 @@ func (m *Model) renderProjectSelector() string {
 
 func (m *Model) renderPlugins() string {
 	if m.pluginManager == nil {
-		var lines []string
+		lines := make([]string, 0, 4)
 		lines = append(lines, "")
 		lines = append(lines, "  "+errorStyle.Render("Plugin system not available"))
 		lines = append(lines, "")

@@ -10,20 +10,20 @@ import (
 // Settings contains all user preferences
 type Settings struct {
 	// === RUN OPTIONS ===
-	LiveReloadDefault   bool   `json:"liveReloadDefault"`   // Enable live reload by default
-	ExternalHost        string `json:"externalHost"`        // External IP for live reload (empty = auto)
-	LiveReloadPort      int    `json:"liveReloadPort"`      // Port for live reload server
-	AutoSync            bool   `json:"autoSync"`            // Sync before running
-	AutoBuild           bool   `json:"autoBuild"`           // Build before syncing
-	DefaultPlatform     string `json:"defaultPlatform"`     // Preferred platform: "ios", "android", ""
-	RunInBackground     bool   `json:"runInBackground"`     // Don't block UI during run
-	ClearLogsOnRun      bool   `json:"clearLogsOnRun"`      // Clear process logs on new run
+	LiveReloadDefault bool   `json:"liveReloadDefault"` // Enable live reload by default
+	ExternalHost      string `json:"externalHost"`      // External IP for live reload (empty = auto)
+	LiveReloadPort    int    `json:"liveReloadPort"`    // Port for live reload server
+	AutoSync          bool   `json:"autoSync"`          // Sync before running
+	AutoBuild         bool   `json:"autoBuild"`         // Build before syncing
+	DefaultPlatform   string `json:"defaultPlatform"`   // Preferred platform: "ios", "android", ""
+	RunInBackground   bool   `json:"runInBackground"`   // Don't block UI during run
+	ClearLogsOnRun    bool   `json:"clearLogsOnRun"`    // Clear process logs on new run
 
 	// === BUILD OPTIONS ===
-	BuildCommand        string `json:"buildCommand"`        // Custom build command (empty = auto-detect)
-	ProductionBuild     bool   `json:"productionBuild"`     // Use production build by default
-	SourceMaps          bool   `json:"sourceMaps"`          // Generate source maps
-	BuildTimeout        int    `json:"buildTimeout"`        // Build timeout in seconds
+	BuildCommand    string `json:"buildCommand"`    // Custom build command (empty = auto-detect)
+	ProductionBuild bool   `json:"productionBuild"` // Use production build by default
+	SourceMaps      bool   `json:"sourceMaps"`      // Generate source maps
+	BuildTimeout    int    `json:"buildTimeout"`    // Build timeout in seconds
 
 	// === iOS OPTIONS ===
 	IOSScheme           string `json:"iosScheme"`           // Xcode scheme name
@@ -43,48 +43,48 @@ type Settings struct {
 	AndroidStudioPath   string `json:"androidStudioPath"`   // Path to Android Studio
 
 	// === WEB OPTIONS ===
-	WebDevCommand       string `json:"webDevCommand"`       // Dev server command (empty = auto-detect)
-	WebDevPort          int    `json:"webDevPort"`          // Dev server port
-	WebOpenBrowser      bool   `json:"webOpenBrowser"`      // Auto-open browser on start
-	WebBrowserPath      string `json:"webBrowserPath"`      // Custom browser path
-	WebHost             string `json:"webHost"`             // Dev server host (localhost, 0.0.0.0)
-	WebHttps            bool   `json:"webHttps"`            // Use HTTPS for dev server
+	WebDevCommand  string `json:"webDevCommand"`  // Dev server command (empty = auto-detect)
+	WebDevPort     int    `json:"webDevPort"`     // Dev server port
+	WebOpenBrowser bool   `json:"webOpenBrowser"` // Auto-open browser on start
+	WebBrowserPath string `json:"webBrowserPath"` // Custom browser path
+	WebHost        string `json:"webHost"`        // Dev server host (localhost, 0.0.0.0)
+	WebHttps       bool   `json:"webHttps"`       // Use HTTPS for dev server
 
 	// === UI OPTIONS ===
-	ShowSpinners        bool   `json:"showSpinners"`        // Show animated spinners
-	CompactMode         bool   `json:"compactMode"`         // Compact UI layout
-	ShowTimestamps      bool   `json:"showTimestamps"`      // Timestamps in logs
-	MaxLogLines         int    `json:"maxLogLines"`         // Max lines per process log
-	ColorTheme          string `json:"colorTheme"`          // "dark", "light", "system"
-	ShowDeviceIcons     bool   `json:"showDeviceIcons"`     // Show emoji icons for devices
-	ShowPlatformBadges  bool   `json:"showPlatformBadges"`  // Show iOS/Android badges
-	LogFontSize         string `json:"logFontSize"`         // "small", "normal", "large"
+	ShowSpinners       bool   `json:"showSpinners"`       // Show animated spinners
+	CompactMode        bool   `json:"compactMode"`        // Compact UI layout
+	ShowTimestamps     bool   `json:"showTimestamps"`     // Timestamps in logs
+	MaxLogLines        int    `json:"maxLogLines"`        // Max lines per process log
+	ColorTheme         string `json:"colorTheme"`         // "dark", "light", "system"
+	ShowDeviceIcons    bool   `json:"showDeviceIcons"`    // Show emoji icons for devices
+	ShowPlatformBadges bool   `json:"showPlatformBadges"` // Show iOS/Android badges
+	LogFontSize        string `json:"logFontSize"`        // "small", "normal", "large"
 
 	// === BEHAVIOR ===
-	ConfirmBeforeKill   bool   `json:"confirmBeforeKill"`   // Confirm before killing process
-	AutoScrollLogs      bool   `json:"autoScrollLogs"`      // Auto-scroll to bottom
-	RefreshOnFocus      bool   `json:"refreshOnFocus"`      // Refresh devices on focus
-	CheckForUpgrades    bool   `json:"checkForUpgrades"`    // Check Capacitor upgrades
-	NotifyOnComplete    bool   `json:"notifyOnComplete"`    // System notification when done
-	SoundOnComplete     bool   `json:"soundOnComplete"`     // Play sound when done
-	AutoOpenIDE         bool   `json:"autoOpenIde"`         // Auto-open IDE on error
-	KeepProcessHistory  int    `json:"keepProcessHistory"`  // Number of old processes to keep
+	ConfirmBeforeKill  bool `json:"confirmBeforeKill"`  // Confirm before killing process
+	AutoScrollLogs     bool `json:"autoScrollLogs"`     // Auto-scroll to bottom
+	RefreshOnFocus     bool `json:"refreshOnFocus"`     // Refresh devices on focus
+	CheckForUpgrades   bool `json:"checkForUpgrades"`   // Check Capacitor upgrades
+	NotifyOnComplete   bool `json:"notifyOnComplete"`   // System notification when done
+	SoundOnComplete    bool `json:"soundOnComplete"`    // Play sound when done
+	AutoOpenIDE        bool `json:"autoOpenIde"`        // Auto-open IDE on error
+	KeepProcessHistory int  `json:"keepProcessHistory"` // Number of old processes to keep
 
 	// === SYNC OPTIONS ===
-	SyncOnSave          bool   `json:"syncOnSave"`          // Sync when web files change
-	SyncTimeout         int    `json:"syncTimeout"`         // Sync timeout in seconds
-	CopyWebDir          bool   `json:"copyWebDir"`          // Copy web dir on sync
-	UpdateNative        bool   `json:"updateNative"`        // Update native deps on sync
-	PodInstall          bool   `json:"podInstall"`          // Run pod install on iOS sync
+	SyncOnSave   bool `json:"syncOnSave"`   // Sync when web files change
+	SyncTimeout  int  `json:"syncTimeout"`  // Sync timeout in seconds
+	CopyWebDir   bool `json:"copyWebDir"`   // Copy web dir on sync
+	UpdateNative bool `json:"updateNative"` // Update native deps on sync
+	PodInstall   bool `json:"podInstall"`   // Run pod install on iOS sync
 
 	// === PATHS & ENVIRONMENT ===
-	NodePath            string `json:"nodePath"`            // Custom node path
-	NpmPath             string `json:"npmPath"`             // Custom npm path
-	NpxPath             string `json:"npxPath"`             // Custom npx path
-	PodPath             string `json:"podPath"`             // Custom pod path
-	XcodePath           string `json:"xcodePath"`           // Custom Xcode path
-	ShellPath           string `json:"shellPath"`           // Shell to use for commands
-	WorkingDirectory    string `json:"workingDirectory"`    // Override working directory
+	NodePath         string `json:"nodePath"`         // Custom node path
+	NpmPath          string `json:"npmPath"`          // Custom npm path
+	NpxPath          string `json:"npxPath"`          // Custom npx path
+	PodPath          string `json:"podPath"`          // Custom pod path
+	XcodePath        string `json:"xcodePath"`        // Custom Xcode path
+	ShellPath        string `json:"shellPath"`        // Shell to use for commands
+	WorkingDirectory string `json:"workingDirectory"` // Override working directory
 
 	// === ADVANCED ===
 	VerboseLogging      bool              `json:"verboseLogging"`      // Verbose output
@@ -98,40 +98,40 @@ type Settings struct {
 	DisableTelemetry    bool              `json:"disableTelemetry"`    // Disable telemetry
 
 	// === PLUGIN SETTINGS ===
-	EnableHotReload     bool   `json:"enableHotReload"`     // Enable hot module reload
-	PreserveState       bool   `json:"preserveState"`       // Preserve app state on reload
-	InlineSourceMaps    bool   `json:"inlineSourceMaps"`    // Inline source maps
-	MinifyBuilds        bool   `json:"minifyBuilds"`        // Minify production builds
+	EnableHotReload  bool `json:"enableHotReload"`  // Enable hot module reload
+	PreserveState    bool `json:"preserveState"`    // Preserve app state on reload
+	InlineSourceMaps bool `json:"inlineSourceMaps"` // Inline source maps
+	MinifyBuilds     bool `json:"minifyBuilds"`     // Minify production builds
 
 	// === EXPERIMENTAL ===
-	EnableBetaFeatures  bool   `json:"enableBetaFeatures"`  // Enable beta features
-	ParallelBuilds      bool   `json:"parallelBuilds"`      // Build platforms in parallel
-	CacheBuilds         bool   `json:"cacheBuilds"`         // Cache build artifacts
-	IncrementalSync     bool   `json:"incrementalSync"`     // Only sync changed files
+	EnableBetaFeatures bool `json:"enableBetaFeatures"` // Enable beta features
+	ParallelBuilds     bool `json:"parallelBuilds"`     // Build platforms in parallel
+	CacheBuilds        bool `json:"cacheBuilds"`        // Cache build artifacts
+	IncrementalSync    bool `json:"incrementalSync"`    // Only sync changed files
 
 	// === MCP SERVER ===
-	MCPEnabled          bool              `json:"mcpEnabled"`          // Enable MCP server
-	MCPTools            map[string]bool   `json:"mcpTools"`            // Enabled/disabled state per tool
+	MCPEnabled bool            `json:"mcpEnabled"` // Enable MCP server
+	MCPTools   map[string]bool `json:"mcpTools"`   // Enabled/disabled state per tool
 }
 
 // DefaultSettings returns settings with sensible defaults
 func DefaultSettings() *Settings {
 	return &Settings{
 		// Run options
-		LiveReloadDefault:   false,
-		ExternalHost:        "",
-		LiveReloadPort:      8100,
-		AutoSync:            false,
-		AutoBuild:           false,
-		DefaultPlatform:     "",
-		RunInBackground:     false,
-		ClearLogsOnRun:      false,
+		LiveReloadDefault: false,
+		ExternalHost:      "",
+		LiveReloadPort:    8100,
+		AutoSync:          false,
+		AutoBuild:         false,
+		DefaultPlatform:   "",
+		RunInBackground:   false,
+		ClearLogsOnRun:    false,
 
 		// Build options
-		BuildCommand:        "",
-		ProductionBuild:     false,
-		SourceMaps:          true,
-		BuildTimeout:        300,
+		BuildCommand:    "",
+		ProductionBuild: false,
+		SourceMaps:      true,
+		BuildTimeout:    300,
 
 		// iOS options
 		IOSScheme:           "",
@@ -151,48 +151,48 @@ func DefaultSettings() *Settings {
 		AndroidStudioPath:   "",
 
 		// Web options
-		WebDevCommand:       "",
-		WebDevPort:          5173,
-		WebOpenBrowser:      true,
-		WebBrowserPath:      "",
-		WebHost:             "localhost",
-		WebHttps:            false,
+		WebDevCommand:  "",
+		WebDevPort:     5173,
+		WebOpenBrowser: true,
+		WebBrowserPath: "",
+		WebHost:        "localhost",
+		WebHttps:       false,
 
 		// UI options
-		ShowSpinners:        true,
-		CompactMode:         false,
-		ShowTimestamps:      true,
-		MaxLogLines:         5000,
-		ColorTheme:          "dark",
-		ShowDeviceIcons:     true,
-		ShowPlatformBadges:  true,
-		LogFontSize:         "normal",
+		ShowSpinners:       true,
+		CompactMode:        false,
+		ShowTimestamps:     true,
+		MaxLogLines:        5000,
+		ColorTheme:         "dark",
+		ShowDeviceIcons:    true,
+		ShowPlatformBadges: true,
+		LogFontSize:        "normal",
 
 		// Behavior
-		ConfirmBeforeKill:   false,
-		AutoScrollLogs:      true,
-		RefreshOnFocus:      true,
-		CheckForUpgrades:    true,
-		NotifyOnComplete:    false,
-		SoundOnComplete:     false,
-		AutoOpenIDE:         false,
-		KeepProcessHistory:  10,
+		ConfirmBeforeKill:  false,
+		AutoScrollLogs:     true,
+		RefreshOnFocus:     true,
+		CheckForUpgrades:   true,
+		NotifyOnComplete:   false,
+		SoundOnComplete:    false,
+		AutoOpenIDE:        false,
+		KeepProcessHistory: 10,
 
 		// Sync options
-		SyncOnSave:          false,
-		SyncTimeout:         120,
-		CopyWebDir:          true,
-		UpdateNative:        true,
-		PodInstall:          true,
+		SyncOnSave:   false,
+		SyncTimeout:  120,
+		CopyWebDir:   true,
+		UpdateNative: true,
+		PodInstall:   true,
 
 		// Paths
-		NodePath:            "",
-		NpmPath:             "",
-		NpxPath:             "",
-		PodPath:             "",
-		XcodePath:           "",
-		ShellPath:           "",
-		WorkingDirectory:    "",
+		NodePath:         "",
+		NpmPath:          "",
+		NpxPath:          "",
+		PodPath:          "",
+		XcodePath:        "",
+		ShellPath:        "",
+		WorkingDirectory: "",
 
 		// Advanced
 		VerboseLogging:      false,
@@ -206,16 +206,16 @@ func DefaultSettings() *Settings {
 		DisableTelemetry:    false,
 
 		// Plugin settings
-		EnableHotReload:     true,
-		PreserveState:       true,
-		InlineSourceMaps:    false,
-		MinifyBuilds:        true,
+		EnableHotReload:  true,
+		PreserveState:    true,
+		InlineSourceMaps: false,
+		MinifyBuilds:     true,
 
 		// Experimental
-		EnableBetaFeatures:  false,
-		ParallelBuilds:      false,
-		CacheBuilds:         false,
-		IncrementalSync:     false,
+		EnableBetaFeatures: false,
+		ParallelBuilds:     false,
+		CacheBuilds:        false,
+		IncrementalSync:    false,
 
 		// MCP Server
 		MCPEnabled: true,
@@ -472,8 +472,13 @@ func GetCategories() []Category {
 
 // GetAllSettings returns a flat list of all settings
 func GetAllSettings() []SettingInfo {
-	var all []SettingInfo
-	for _, cat := range GetCategories() {
+	categories := GetCategories()
+	totalCount := 0
+	for _, cat := range categories {
+		totalCount += len(cat.Settings)
+	}
+	all := make([]SettingInfo, 0, totalCount)
+	for _, cat := range categories {
 		all = append(all, cat.Settings...)
 	}
 	return all

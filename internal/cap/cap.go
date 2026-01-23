@@ -151,7 +151,9 @@ func walkDirWithDepth(root string, currentDepth, maxDepth int, fn func(path stri
 		}
 
 		if entry.IsDir() && currentDepth < maxDepth {
-			walkDirWithDepth(path, currentDepth+1, maxDepth, fn)
+			if err := walkDirWithDepth(path, currentDepth+1, maxDepth, fn); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -236,22 +238,6 @@ func LoadProjectAt(dir string) (*Project, error) {
 	return project, nil
 }
 
-// getCapacitorConfig gets config using the Capacitor CLI
-func getCapacitorConfig() (*CapacitorConfig, error) {
-	cmd := exec.Command("npx", "cap", "config", "--json")
-	output, err := cmd.Output()
-	if err != nil {
-		return nil, err
-	}
-
-	var config CapacitorConfig
-	if err := json.Unmarshal(output, &config); err != nil {
-		return nil, err
-	}
-
-	return &config, nil
-}
-
 // getCapacitorConfigAt gets config using the Capacitor CLI from a specific directory
 func getCapacitorConfigAt(dir string) (*CapacitorConfig, error) {
 	cmd := exec.Command("npx", "cap", "config", "--json")
@@ -329,9 +315,9 @@ func listAndroidDevices() ([]device.Device, error) {
 		status := parts[1]
 
 		d := device.Device{
-			ID:        id,
-			Platform:  "android",
-			Online:    status == "device",
+			ID:         id,
+			Platform:   "android",
+			Online:     status == "device",
 			IsEmulator: strings.HasPrefix(id, "emulator"),
 		}
 
@@ -355,7 +341,7 @@ func listAndroidDevices() ([]device.Device, error) {
 
 	// Get emulators
 	emulators, _ := listAndroidEmulators()
-	
+
 	// Add offline emulators that aren't already running
 	for _, emu := range emulators {
 		found := false
@@ -374,7 +360,7 @@ func listAndroidDevices() ([]device.Device, error) {
 }
 
 // listAndroidEmulators lists available Android emulators
-func listAndroidEmulators() ([]device.Device, error) {
+func listAndroidEmulators() ([]device.Device, error) { //nolint:unparam // error kept for API consistency
 	var devices []device.Device
 
 	cmd := exec.Command("emulator", "-list-avds")
@@ -403,7 +389,7 @@ func listAndroidEmulators() ([]device.Device, error) {
 }
 
 // listIOSDevices lists iOS devices and simulators
-func listIOSDevices() ([]device.Device, error) {
+func listIOSDevices() ([]device.Device, error) { //nolint:unparam // error kept for API consistency
 	var devices []device.Device
 
 	// Check if xcrun is available (macOS only)
@@ -420,10 +406,10 @@ func listIOSDevices() ([]device.Device, error) {
 
 	var result struct {
 		Devices map[string][]struct {
-			UDID      string `json:"udid"`
-			Name      string `json:"name"`
-			State     string `json:"state"`
-			IsAvailable bool `json:"isAvailable"`
+			UDID        string `json:"udid"`
+			Name        string `json:"name"`
+			State       string `json:"state"`
+			IsAvailable bool   `json:"isAvailable"`
 		} `json:"devices"`
 	}
 
@@ -673,13 +659,13 @@ func DetectWebDevCommand() string {
 
 	// Priority order of common dev scripts
 	scriptPriority := []string{
-		"dev",        // Vite, Nuxt, common
-		"serve",      // Vue CLI
-		"start",      // Create React App, general
-		"develop",    // Gatsby
-		"dev:web",    // Ionic
+		"dev",         // Vite, Nuxt, common
+		"serve",       // Vue CLI
+		"start",       // Create React App, general
+		"develop",     // Gatsby
+		"dev:web",     // Ionic
 		"ionic:serve", // Ionic
-		"watch",      // Some setups
+		"watch",       // Some setups
 	}
 
 	for _, script := range scriptPriority {
@@ -827,7 +813,7 @@ func WaitForPort(port int, timeout time.Duration) bool {
 	for time.Now().Before(deadline) {
 		conn, err := net.DialTimeout("tcp", addr, 500*time.Millisecond)
 		if err == nil {
-			conn.Close()
+			_ = conn.Close()
 			return true
 		}
 		time.Sleep(200 * time.Millisecond)

@@ -45,10 +45,10 @@ func Register() error {
 
 // Plugin interface implementation
 
-func (p *MCPPlugin) ID() string          { return PluginID }
-func (p *MCPPlugin) Name() string        { return PluginName }
-func (p *MCPPlugin) Version() string     { return PluginVersion }
-func (p *MCPPlugin) Author() string      { return PluginAuthor }
+func (p *MCPPlugin) ID() string      { return PluginID }
+func (p *MCPPlugin) Name() string    { return PluginName }
+func (p *MCPPlugin) Version() string { return PluginVersion }
+func (p *MCPPlugin) Author() string  { return PluginAuthor }
 func (p *MCPPlugin) Description() string {
 	return "Exposes lazycap functionality via MCP protocol for AI assistants"
 }
@@ -183,7 +183,7 @@ func (p *MCPPlugin) Stop() error {
 
 	// Close listener if TCP
 	if p.listener != nil {
-		p.listener.Close()
+		_ = p.listener.Close()
 		p.listener = nil
 	}
 	p.mu.Unlock()
@@ -224,7 +224,7 @@ func (p *MCPPlugin) acceptConnections(listener net.Listener) {
 }
 
 func (p *MCPPlugin) handleConnection(conn net.Conn) {
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	scanner := bufio.NewScanner(conn)
 	encoder := json.NewEncoder(conn)
@@ -238,7 +238,7 @@ func (p *MCPPlugin) handleConnection(conn net.Conn) {
 
 		line := scanner.Text()
 		response := p.handleRequest(line)
-		encoder.Encode(response)
+		_ = encoder.Encode(response)
 	}
 }
 
@@ -257,7 +257,7 @@ func (p *MCPPlugin) runStdio() {
 
 		line := scanner.Text()
 		response := p.handleRequest(line)
-		encoder.Encode(response)
+		_ = encoder.Encode(response)
 	}
 }
 

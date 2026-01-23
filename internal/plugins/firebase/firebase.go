@@ -49,7 +49,6 @@ type FirebasePlugin struct {
 	stopCh       chan struct{}
 	outputCh     chan string
 	emulators    []EmulatorStatus
-	projectID    string
 	configPath   string
 	importPath   string
 	exportOnExit bool
@@ -92,10 +91,10 @@ func Register() error {
 
 // Plugin interface implementation
 
-func (p *FirebasePlugin) ID() string          { return PluginID }
-func (p *FirebasePlugin) Name() string        { return PluginName }
-func (p *FirebasePlugin) Version() string     { return PluginVersion }
-func (p *FirebasePlugin) Author() string      { return PluginAuthor }
+func (p *FirebasePlugin) ID() string      { return PluginID }
+func (p *FirebasePlugin) Name() string    { return PluginName }
+func (p *FirebasePlugin) Version() string { return PluginVersion }
+func (p *FirebasePlugin) Author() string  { return PluginAuthor }
 func (p *FirebasePlugin) Description() string {
 	return "Integrates Firebase Emulator Suite for local development"
 }
@@ -107,36 +106,37 @@ func (p *FirebasePlugin) IsRunning() bool {
 }
 
 func (p *FirebasePlugin) GetSettings() []plugin.Setting {
-	settings := []plugin.Setting{
-		{
+	settings := make([]plugin.Setting, 0, 4+len(AvailableEmulators))
+	settings = append(settings,
+		plugin.Setting{
 			Key:         "importPath",
 			Name:        "Import Data Path",
 			Description: "Path to import emulator data from on start",
 			Type:        "string",
 			Default:     "",
 		},
-		{
+		plugin.Setting{
 			Key:         "exportOnExit",
 			Name:        "Export on Exit",
 			Description: "Export emulator data when stopping",
 			Type:        "bool",
 			Default:     true,
 		},
-		{
+		plugin.Setting{
 			Key:         "exportPath",
 			Name:        "Export Path",
 			Description: "Path to export emulator data to",
 			Type:        "string",
 			Default:     ".firebase-export",
 		},
-		{
+		plugin.Setting{
 			Key:         "uiEnabled",
 			Name:        "Enable Emulator UI",
 			Description: "Enable the Firebase Emulator UI (usually at localhost:4000)",
 			Type:        "bool",
 			Default:     true,
 		},
-	}
+	)
 
 	// Add per-emulator settings
 	for _, emu := range AvailableEmulators {
@@ -148,7 +148,7 @@ func (p *FirebasePlugin) GetSettings() []plugin.Setting {
 
 		settings = append(settings, plugin.Setting{
 			Key:         "emulator:" + emu,
-			Name:        strings.Title(emu) + " Emulator",
+			Name:        titleCase(emu) + " Emulator",
 			Description: fmt.Sprintf("Enable %s emulator", emu),
 			Type:        "bool",
 			Default:     defaultEnabled,
@@ -156,6 +156,14 @@ func (p *FirebasePlugin) GetSettings() []plugin.Setting {
 	}
 
 	return settings
+}
+
+// titleCase capitalizes the first letter of a string
+func titleCase(s string) string {
+	if s == "" {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
 }
 
 func (p *FirebasePlugin) OnSettingChange(key string, value interface{}) {
@@ -345,11 +353,11 @@ func (p *FirebasePlugin) Stop() error {
 
 	if p.cmd != nil && p.cmd.Process != nil {
 		// Try graceful shutdown first
-		p.cmd.Process.Signal(os.Interrupt)
+		_ = p.cmd.Process.Signal(os.Interrupt)
 
 		// Wait for the process to exit
 		go func() {
-			p.cmd.Wait()
+			_ = p.cmd.Wait()
 		}()
 	}
 
@@ -559,7 +567,7 @@ func (p *FirebasePlugin) startEmulators(enabledList []string) error {
 
 	// Wait for process in goroutine
 	go func() {
-		cmd.Wait()
+		_ = cmd.Wait()
 		p.mu.Lock()
 		p.running = false
 		p.cmd = nil

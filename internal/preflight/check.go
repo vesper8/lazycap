@@ -76,9 +76,10 @@ func Run() *Results {
 		result := checkTool(tool)
 		results.Checks = append(results.Checks, result)
 
-		if result.Status == StatusError {
+		switch result.Status {
+		case StatusError:
 			results.HasErrors = true
-		} else if result.Status == StatusWarning {
+		case StatusWarning:
 			results.HasWarnings = true
 		}
 	}
