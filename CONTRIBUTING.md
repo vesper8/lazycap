@@ -13,6 +13,7 @@ Thank you for your interest in contributing to lazycap! This guide will help you
 - [Testing](#testing)
 - [Pull Request Process](#pull-request-process)
 - [Commit Convention](#commit-convention)
+- [Release Process](#release-process)
 - [Issue Guidelines](#issue-guidelines)
 
 ## Code of Conduct
@@ -360,26 +361,67 @@ go test ./internal/cap/...
 
 ## Commit Convention
 
-We follow [Conventional Commits](https://www.conventionalcommits.org/):
+We follow [Conventional Commits](https://www.conventionalcommits.org/). **This is important because commit messages determine automatic version bumps.**
 
-| Prefix | Description |
-|--------|-------------|
-| `feat:` | New feature |
-| `fix:` | Bug fix |
-| `docs:` | Documentation only |
-| `style:` | Formatting, no code change |
-| `refactor:` | Code restructuring |
-| `test:` | Adding/updating tests |
-| `chore:` | Maintenance tasks |
-| `perf:` | Performance improvement |
+| Prefix | Description | Version Bump |
+|--------|-------------|--------------|
+| `feat:` | New feature | Minor (0.X.0) |
+| `fix:` | Bug fix | Patch (0.0.X) |
+| `docs:` | Documentation only | Patch |
+| `style:` | Formatting, no code change | Patch |
+| `refactor:` | Code restructuring | Patch |
+| `test:` | Adding/updating tests | Patch |
+| `chore:` | Maintenance tasks | Patch |
+| `perf:` | Performance improvement | Patch |
 
-**Examples:**
+### Breaking Changes
+
+For breaking changes, use `!` after the type or include `BREAKING CHANGE:` in the commit body:
+
+```bash
+# Using ! suffix (bumps major version)
+feat!: redesign plugin API
+
+# Using BREAKING CHANGE in body (bumps major version)
+refactor: change configuration format
+
+BREAKING CHANGE: The config file format has changed from JSON to YAML.
+```
+
+### Manual Version Override
+
+Include `[major]`, `[minor]`, or `[patch]` in your commit message to force a specific version bump:
+
+```bash
+git commit -m "chore: important update [minor]"
+```
+
+### Examples
+
 ```
 feat: add Firebase Emulator plugin
 fix: correct device detection on M1 Macs
 docs: update plugin development guide
 refactor: extract device discovery into separate package
+feat!: redesign settings API
+fix: critical bug [major]
 ```
+
+See [RELEASING.md](RELEASING.md) for complete documentation on versioning and releases.
+
+## Release Process
+
+lazycap uses automated releases. When your PR is merged to `main`:
+
+1. GitHub Actions analyzes your commit messages
+2. A new version tag is created automatically
+3. Binaries are built for all platforms
+4. A GitHub Release is published
+5. The Homebrew formula is updated
+
+**You don't need to do anything special** — just follow the commit convention above, and the automation handles the rest.
+
+For details on how versioning works, see [RELEASING.md](RELEASING.md).
 
 ## Issue Guidelines
 

@@ -25,6 +25,7 @@ import (
 	"github.com/icarus-itcs/lazycap/internal/plugin"
 	"github.com/icarus-itcs/lazycap/internal/preflight"
 	"github.com/icarus-itcs/lazycap/internal/settings"
+	"github.com/icarus-itcs/lazycap/internal/update"
 )
 
 // Status indicator styles
@@ -115,6 +116,11 @@ type Model struct {
 	projects    []*cap.Project // All discovered projects (for monorepo support)
 	upgradeInfo *cap.UpgradeInfo
 
+	// Version and updates
+	version    string
+	updateInfo *update.Info
+	updating   bool
+
 	// Project selector (for monorepos with multiple projects)
 	showProjectSelector bool
 	projectCursor       int
@@ -175,54 +181,56 @@ type Model struct {
 }
 
 type keyMap struct {
-	Up        key.Binding
-	Down      key.Binding
-	Tab       key.Binding
-	Run       key.Binding
-	Sync      key.Binding
-	Build     key.Binding
-	Open      key.Binding
-	Kill      key.Binding
-	Refresh   key.Binding
-	Upgrade   key.Binding
-	Help      key.Binding
-	Quit      key.Binding
-	Left      key.Binding
-	Right     key.Binding
-	Copy      key.Binding
-	Export    key.Binding
-	Preflight key.Binding
-	Settings  key.Binding
-	Debug     key.Binding
-	Plugins   key.Binding
-	Enter     key.Binding
-	Workspace key.Binding
+	Up         key.Binding
+	Down       key.Binding
+	Tab        key.Binding
+	Run        key.Binding
+	Sync       key.Binding
+	Build      key.Binding
+	Open       key.Binding
+	Kill       key.Binding
+	Refresh    key.Binding
+	Upgrade    key.Binding
+	SelfUpdate key.Binding
+	Help       key.Binding
+	Quit       key.Binding
+	Left       key.Binding
+	Right      key.Binding
+	Copy       key.Binding
+	Export     key.Binding
+	Preflight  key.Binding
+	Settings   key.Binding
+	Debug      key.Binding
+	Plugins    key.Binding
+	Enter      key.Binding
+	Workspace  key.Binding
 }
 
 func defaultKeyMap() keyMap {
 	return keyMap{
-		Up:        key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "up")),
-		Down:      key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "down")),
-		Tab:       key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "switch pane")),
-		Run:       key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "run")),
-		Sync:      key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "sync")),
-		Build:     key.NewBinding(key.WithKeys("b"), key.WithHelp("b", "build")),
-		Open:      key.NewBinding(key.WithKeys("o"), key.WithHelp("o", "open IDE")),
-		Kill:      key.NewBinding(key.WithKeys("x"), key.WithHelp("x", "kill")),
-		Refresh:   key.NewBinding(key.WithKeys("R"), key.WithHelp("R", "refresh")),
-		Upgrade:   key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "upgrade")),
-		Help:      key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "help")),
-		Quit:      key.NewBinding(key.WithKeys("q", "ctrl+c"), key.WithHelp("q", "quit")),
-		Left:      key.NewBinding(key.WithKeys("left", "h"), key.WithHelp("←", "prev tab")),
-		Right:     key.NewBinding(key.WithKeys("right", "l"), key.WithHelp("→", "next tab")),
-		Copy:      key.NewBinding(key.WithKeys("c"), key.WithHelp("c", "copy logs")),
-		Export:    key.NewBinding(key.WithKeys("e"), key.WithHelp("e", "export logs")),
-		Preflight: key.NewBinding(key.WithKeys("p"), key.WithHelp("p", "preflight")),
-		Settings:  key.NewBinding(key.WithKeys(","), key.WithHelp(",", "settings")),
-		Debug:     key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "debug")),
-		Plugins:   key.NewBinding(key.WithKeys("P"), key.WithHelp("P", "plugins")),
-		Enter:     key.NewBinding(key.WithKeys("enter", " "), key.WithHelp("enter", "toggle")),
-		Workspace: key.NewBinding(key.WithKeys("W"), key.WithHelp("W", "projects")),
+		Up:         key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "up")),
+		Down:       key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "down")),
+		Tab:        key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "switch pane")),
+		Run:        key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "run")),
+		Sync:       key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "sync")),
+		Build:      key.NewBinding(key.WithKeys("b"), key.WithHelp("b", "build")),
+		Open:       key.NewBinding(key.WithKeys("o"), key.WithHelp("o", "open IDE")),
+		Kill:       key.NewBinding(key.WithKeys("x"), key.WithHelp("x", "kill")),
+		Refresh:    key.NewBinding(key.WithKeys("R"), key.WithHelp("R", "refresh")),
+		Upgrade:    key.NewBinding(key.WithKeys("u"), key.WithHelp("u", "upgrade")),
+		SelfUpdate: key.NewBinding(key.WithKeys("U"), key.WithHelp("U", "update lazycap")),
+		Help:       key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "help")),
+		Quit:       key.NewBinding(key.WithKeys("q", "ctrl+c"), key.WithHelp("q", "quit")),
+		Left:       key.NewBinding(key.WithKeys("left", "h"), key.WithHelp("←", "prev tab")),
+		Right:      key.NewBinding(key.WithKeys("right", "l"), key.WithHelp("→", "next tab")),
+		Copy:       key.NewBinding(key.WithKeys("c"), key.WithHelp("c", "copy logs")),
+		Export:     key.NewBinding(key.WithKeys("e"), key.WithHelp("e", "export logs")),
+		Preflight:  key.NewBinding(key.WithKeys("p"), key.WithHelp("p", "preflight")),
+		Settings:   key.NewBinding(key.WithKeys(","), key.WithHelp(",", "settings")),
+		Debug:      key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "debug")),
+		Plugins:    key.NewBinding(key.WithKeys("P"), key.WithHelp("P", "plugins")),
+		Enter:      key.NewBinding(key.WithKeys("enter", " "), key.WithHelp("enter", "toggle")),
+		Workspace:  key.NewBinding(key.WithKeys("W"), key.WithHelp("W", "projects")),
 	}
 }
 
@@ -240,12 +248,12 @@ func (k keyMap) FullHelp() [][]key.Binding {
 }
 
 // NewModel creates a new model (without plugin support)
-func NewModel(project *cap.Project) Model {
-	return NewModelWithPlugins(project, nil, nil)
+func NewModel(project *cap.Project, version string) Model {
+	return NewModelWithPlugins(project, nil, nil, version)
 }
 
 // NewModelWithProjects creates a new model with multiple discovered projects
-func NewModelWithProjects(projects []*cap.Project, pluginMgr *plugin.Manager, appCtx *plugin.AppContext) Model {
+func NewModelWithProjects(projects []*cap.Project, pluginMgr *plugin.Manager, appCtx *plugin.AppContext, version string) Model {
 	var activeProject *cap.Project
 	showSelector := false
 
@@ -257,14 +265,14 @@ func NewModelWithProjects(projects []*cap.Project, pluginMgr *plugin.Manager, ap
 		showSelector = true
 	}
 
-	m := NewModelWithPlugins(activeProject, pluginMgr, appCtx)
+	m := NewModelWithPlugins(activeProject, pluginMgr, appCtx, version)
 	m.projects = projects
 	m.showProjectSelector = showSelector
 	return m
 }
 
 // NewModelWithPlugins creates a new model with plugin support
-func NewModelWithPlugins(project *cap.Project, pluginMgr *plugin.Manager, appCtx *plugin.AppContext) Model {
+func NewModelWithPlugins(project *cap.Project, pluginMgr *plugin.Manager, appCtx *plugin.AppContext, version string) Model {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(capBlue)
@@ -277,6 +285,7 @@ func NewModelWithPlugins(project *cap.Project, pluginMgr *plugin.Manager, appCtx
 
 	m := Model{
 		project:          project,
+		version:          version,
 		focus:            FocusDevices,
 		spinner:          s,
 		logViewport:      viewport.New(0, 0),
@@ -381,8 +390,8 @@ func NewModelWithPlugins(project *cap.Project, pluginMgr *plugin.Manager, appCtx
 }
 
 // NewDemoModel creates a model with mock data for screenshots/demos
-func NewDemoModel(project *cap.Project, pluginMgr *plugin.Manager, appCtx *plugin.AppContext) Model {
-	m := NewModelWithPlugins(project, pluginMgr, appCtx)
+func NewDemoModel(project *cap.Project, pluginMgr *plugin.Manager, appCtx *plugin.AppContext, version string) Model {
+	m := NewModelWithPlugins(project, pluginMgr, appCtx, version)
 	m.loading = false
 
 	// Mock devices - mix of physical devices, emulators, and web
@@ -621,6 +630,15 @@ type pluginLogMsg struct {
 	time     time.Time
 }
 
+type updateCheckedMsg struct {
+	info *update.Info
+	err  error
+}
+
+type selfUpdateMsg struct {
+	err error
+}
+
 // Commands
 func loadDevices() tea.Msg {
 	devices, err := cap.ListDevices()
@@ -633,6 +651,23 @@ func loadDevices() tea.Msg {
 func checkUpgrade() tea.Msg {
 	info, _ := cap.CheckForUpgrade()
 	return upgradeCheckedMsg{info}
+}
+
+func checkForUpdate(version string) tea.Cmd {
+	return func() tea.Msg {
+		info, err := update.Check(version)
+		return updateCheckedMsg{info: info, err: err}
+	}
+}
+
+func (m *Model) doSelfUpdate() tea.Cmd {
+	return func() tea.Msg {
+		if m.updateInfo == nil || !m.updateInfo.UpdateAvailable {
+			return selfUpdateMsg{err: fmt.Errorf("no update available")}
+		}
+		err := update.SelfUpdate(m.updateInfo)
+		return selfUpdateMsg{err: err}
+	}
 }
 
 func (m *Model) getSelectedDevice() *device.Device {
@@ -729,6 +764,7 @@ func (m Model) Init() tea.Cmd {
 	cmds := []tea.Cmd{
 		loadDevices,
 		checkUpgrade,
+		checkForUpdate(m.version),
 		m.spinner.Tick,
 		setTerminalTitle(m.getTerminalTitle()),
 	}
@@ -926,6 +962,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.upgradeInfo != nil && m.upgradeInfo.HasUpgrade {
 				return m, m.startUpgrade()
 			}
+		case key.Matches(msg, m.keys.SelfUpdate):
+			if m.updateInfo != nil && m.updateInfo.UpdateAvailable && !m.updating {
+				m.updating = true
+				m.setStatus(fmt.Sprintf("Updating to v%s...", m.updateInfo.LatestVersion))
+				return m, m.doSelfUpdate()
+			} else if m.updateInfo == nil {
+				m.setStatus("Checking for updates...")
+				return m, checkForUpdate(m.version)
+			} else if !m.updateInfo.UpdateAvailable {
+				m.setStatus(fmt.Sprintf("Already on latest version (v%s)", update.VersionString(m.version)))
+			}
+			return m, nil
 		case key.Matches(msg, m.keys.Kill):
 			p := m.getSelectedProcess()
 			if p != nil && p.Status == ProcessRunning && p.Cmd != nil && p.Cmd.Process != nil {
@@ -985,6 +1033,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case upgradeCheckedMsg:
 		m.upgradeInfo = msg.info
+
+	case updateCheckedMsg:
+		if msg.err == nil && msg.info != nil {
+			m.updateInfo = msg.info
+		}
+
+	case selfUpdateMsg:
+		m.updating = false
+		if msg.err != nil {
+			m.setStatus(fmt.Sprintf("Update failed: %s", msg.err))
+		} else {
+			m.setStatus("Update complete! Restart lazycap to use the new version.")
+		}
 
 	case processStartedMsg:
 		for _, p := range m.processes {
@@ -1484,8 +1545,9 @@ func (m Model) View() string {
 }
 
 func (m *Model) renderHeader() string {
-	// Logo
-	logo := "  " + LogoCompact()
+	// Logo with version
+	versionStr := update.VersionString(m.version)
+	logo := "  " + LogoCompact() + " " + mutedStyle.Render("v"+versionStr)
 
 	// Project info (with nil check)
 	projectName := "No project"
@@ -1517,10 +1579,17 @@ func (m *Model) renderHeader() string {
 	}
 	platformStr := strings.Join(platforms, " ")
 
-	// Upgrade notice
+	// Capacitor upgrade notice
 	var upgrade string
 	if m.upgradeInfo != nil && m.upgradeInfo.HasUpgrade {
 		upgrade = upgradeStyle.Render(fmt.Sprintf("  ↑ v%s available", m.upgradeInfo.LatestVersion))
+	}
+
+	// lazycap update notice
+	var lazycapUpdate string
+	if m.updateInfo != nil && m.updateInfo.UpdateAvailable {
+		lazycapUpdate = "  " + lipgloss.NewStyle().Foreground(lipgloss.Color("#00d4ff")).Render(
+			fmt.Sprintf("↑ lazycap v%s (U=update)", m.updateInfo.LatestVersion))
 	}
 
 	// Preflight indicator
@@ -1539,7 +1608,7 @@ func (m *Model) renderHeader() string {
 		statusMsg = "  " + successStyle.Render(m.statusMessage)
 	}
 
-	headerLine := fmt.Sprintf("%s  %s%s  %s%s%s%s", logo, project, workspaceHint, platformStr, upgrade, preflightIndicator, statusMsg)
+	headerLine := fmt.Sprintf("%s  %s%s  %s%s%s%s%s", logo, project, workspaceHint, platformStr, upgrade, lazycapUpdate, preflightIndicator, statusMsg)
 
 	return headerLine
 }
@@ -1889,6 +1958,27 @@ func (m *Model) renderPreflight() string {
 
 	nameStyle := lipgloss.NewStyle().Width(20)
 	pathStyle := mutedStyle
+
+	// Update version info in preflight results for display
+	m.preflightResults.SetVersionInfo(m.version, m.updateInfo)
+
+	// Version check first
+	versionCheck := m.preflightResults.VersionCheck()
+	var vIcon string
+	var vMsgStyle lipgloss.Style
+	switch versionCheck.Status {
+	case preflight.StatusOK:
+		vIcon = okIcon
+		vMsgStyle = successStyle
+	case preflight.StatusWarning:
+		vIcon = warnIcon
+		vMsgStyle = lipgloss.NewStyle().Foreground(warnColor)
+	default:
+		vIcon = okIcon
+		vMsgStyle = successStyle
+	}
+	lines = append(lines, fmt.Sprintf("  %s %s %s", vIcon, nameStyle.Render(versionCheck.Name), vMsgStyle.Render(versionCheck.Message)))
+	lines = append(lines, "")
 
 	for _, check := range m.preflightResults.Checks {
 		var icon string

@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+
+	"github.com/icarus-itcs/lazycap/internal/update"
 )
 
 // CheckResult represents the result of a single check
@@ -26,9 +28,11 @@ const (
 
 // Results contains all preflight check results
 type Results struct {
-	Checks  []CheckResult
-	HasErrors bool
+	Checks      []CheckResult
+	HasErrors   bool
 	HasWarnings bool
+	Version     string
+	UpdateInfo  *update.Info
 }
 
 // RequiredTool defines a tool to check for
@@ -220,4 +224,33 @@ func (r *Results) Summary() string {
 		return fmt.Sprintf("%d warnings", warn)
 	}
 	return fmt.Sprintf("%d checks passed", ok)
+}
+
+// SetVersionInfo sets version and update information on the results
+func (r *Results) SetVersionInfo(version string, info *update.Info) {
+	r.Version = version
+	r.UpdateInfo = info
+}
+
+// VersionCheck returns a CheckResult for the current version
+func (r *Results) VersionCheck() CheckResult {
+	result := CheckResult{
+		Name: "lazycap",
+	}
+
+	if r.Version == "" || r.Version == "dev" {
+		result.Status = StatusOK
+		result.Message = "dev (development build)"
+		return result
+	}
+
+	result.Status = StatusOK
+	result.Message = "v" + r.Version
+
+	if r.UpdateInfo != nil && r.UpdateInfo.UpdateAvailable {
+		result.Status = StatusWarning
+		result.Message = fmt.Sprintf("v%s (v%s available, press U to update)", r.Version, r.UpdateInfo.LatestVersion)
+	}
+
+	return result
 }

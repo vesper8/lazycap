@@ -1,3 +1,14 @@
+# Release workflow for lazycap
+# Triggers on push to main, determines version from commits, builds with GoReleaser
+#
+# Version Bumping:
+#   - Default: patch (0.0.X)
+#   - feat: commits bump minor (0.X.0)
+#   - BREAKING CHANGE in body or ! suffix bumps major (X.0.0)
+#   - Manual override: include [major], [minor], or [patch] in commit message
+#
+# See RELEASING.md for full documentation
+
 name: Release
 
 on:
@@ -8,207 +19,154 @@ on:
       - '**.go'
       - 'go.mod'
       - 'go.sum'
-      - 'Makefile'
+      - '.goreleaser.yaml'
       - '.github/workflows/release.yml'
 
 permissions:
   contents: write
 
 jobs:
-  tag:
+  release:
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Get next version
-        id: version
-        run: |
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-          VERSION=${LATEST_TAG#v}
-          MAJOR=$(echo $VERSION | cut -d. -f1)
-          MINOR=$(echo $VERSION | cut -d. -f2)
-          PATCH=$(echo $VERSION | cut -d. -f3)
-          PATCH=$((PATCH + 1))
-          NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
-          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-
-      - name: Create and push tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag ${{ steps.version.outputs.version }}
-          git push origin ${{ steps.version.outputs.version }}
-
-  build:
-    needs: tag
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          # macOS
-          - os: macos-latest
-            goos: darwin
-            goarch: amd64
-            name: macos-intel
-          - os: macos-latest
-            goos: darwin
-            goarch: arm64
-            name: macos-apple-silicon
-          # Linux
-          - os: ubuntu-latest
-            goos: linux
-            goarch: amd64
-            name: linux-64bit
-          - os: ubuntu-latest
-            goos: linux
-            goarch: arm64
-            name: linux-arm64
-          - os: ubuntu-latest
-            goos: linux
-            goarch: 386
-            name: linux-32bit
-          - os: ubuntu-latest
-            goos: linux
-            goarch: arm
-            goarm: 7
-            name: linux-armv7
-          # Windows
-          - os: ubuntu-latest
-            goos: windows
-            goarch: amd64
-            name: windows-64bit
-            ext: .exe
-          - os: ubuntu-latest
-            goos: windows
-            goarch: arm64
-            name: windows-arm64
-            ext: .exe
-          - os: ubuntu-latest
-            goos: windows
-            goarch: 386
-            name: windows-32bit
-            ext: .exe
-          # FreeBSD
-          - os: ubuntu-latest
-            goos: freebsd
-            goarch: amd64
-            name: freebsd-64bit
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.tag.outputs.version }}
-
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
+          cache: true
 
-      - name: Build
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-          GOARM: ${{ matrix.goarm }}
-          CGO_ENABLED: 0
+      - name: Determine version bump
+        id: version
         run: |
-          VERSION=${{ needs.tag.outputs.version }}
-          BINARY_NAME="lazycap${{ matrix.ext }}"
-          go build -ldflags "-s -w -X main.version=${VERSION} -X main.commit=${{ github.sha }} -X main.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o ${BINARY_NAME} .
+          # Get the latest tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "Latest tag: $LATEST_TAG"
 
-          if [ "${{ matrix.goos }}" = "windows" ]; then
-            zip lazycap_${VERSION#v}_${{ matrix.goos }}_${{ matrix.goarch }}.zip ${BINARY_NAME}
+          # Parse current version
+          VERSION=${LATEST_TAG#v}
+          MAJOR=$(echo $VERSION | cut -d. -f1)
+          MINOR=$(echo $VERSION | cut -d. -f2)
+          PATCH=$(echo $VERSION | cut -d. -f3)
+
+          # Get commits since last tag
+          if [ "$LATEST_TAG" = "v0.0.0" ]; then
+            COMMITS=$(git log --oneline)
           else
-            tar -czvf lazycap_${VERSION#v}_${{ matrix.goos }}_${{ matrix.goarch }}.tar.gz ${BINARY_NAME}
+            COMMITS=$(git log ${LATEST_TAG}..HEAD --oneline)
           fi
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: lazycap_${{ matrix.goos }}_${{ matrix.goarch }}
-          path: |
-            *.tar.gz
-            *.zip
+          # Get full commit messages for BREAKING CHANGE detection
+          if [ "$LATEST_TAG" = "v0.0.0" ]; then
+            FULL_COMMITS=$(git log --format="%B---COMMIT_SEPARATOR---")
+          else
+            FULL_COMMITS=$(git log ${LATEST_TAG}..HEAD --format="%B---COMMIT_SEPARATOR---")
+          fi
 
-  release:
-    needs: [tag, build]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: dist
-          merge-multiple: true
+          echo "Commits since last tag:"
+          echo "$COMMITS"
 
-      - name: Generate checksums
+          # Determine bump type
+          BUMP="patch"
+
+          # Check for manual override first (highest priority)
+          if echo "$COMMITS" | grep -qi '\[major\]'; then
+            BUMP="major"
+            echo "Manual major version bump requested"
+          elif echo "$COMMITS" | grep -qi '\[minor\]'; then
+            BUMP="minor"
+            echo "Manual minor version bump requested"
+          elif echo "$COMMITS" | grep -qi '\[patch\]'; then
+            BUMP="patch"
+            echo "Manual patch version bump requested"
+          # Check for breaking changes
+          elif echo "$FULL_COMMITS" | grep -qi 'BREAKING CHANGE'; then
+            BUMP="major"
+            echo "Breaking change detected"
+          elif echo "$COMMITS" | grep -qE '^[a-f0-9]+ [a-zA-Z]+(\([^)]+\))?!:'; then
+            BUMP="major"
+            echo "Breaking change (!) detected"
+          # Check for features
+          elif echo "$COMMITS" | grep -qE '^[a-f0-9]+ feat(\([^)]+\))?:'; then
+            BUMP="minor"
+            echo "Feature detected"
+          fi
+
+          echo "Bump type: $BUMP"
+
+          # Calculate new version
+          case $BUMP in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+
+          NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+          echo "New version: $NEW_VERSION"
+
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "bump=$BUMP" >> $GITHUB_OUTPUT
+
+      - name: Create and push tag
+        id: tag
         run: |
-          cd dist
-          sha256sum * > checksums.txt
+          VERSION=${{ steps.version.outputs.version }}
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ needs.tag.outputs.version }}
-          files: |
-            dist/*.tar.gz
-            dist/*.zip
-            dist/checksums.txt
-          generate_release_notes: true
-          body: |
-            ## Installation
-
-            **macOS (Apple Silicon):**
-            ```bash
-            curl -sL https://github.com/icarus-itcs/lazycap/releases/download/${{ needs.tag.outputs.version }}/lazycap_${{ needs.tag.outputs.version }}_darwin_arm64.tar.gz | tar xz
-            sudo mv lazycap /usr/local/bin/
-            ```
-
-            **macOS (Intel):**
-            ```bash
-            curl -sL https://github.com/icarus-itcs/lazycap/releases/download/${{ needs.tag.outputs.version }}/lazycap_${{ needs.tag.outputs.version }}_darwin_amd64.tar.gz | tar xz
-            sudo mv lazycap /usr/local/bin/
-            ```
-
-            **Linux (64-bit):**
-            ```bash
-            curl -sL https://github.com/icarus-itcs/lazycap/releases/download/${{ needs.tag.outputs.version }}/lazycap_${{ needs.tag.outputs.version }}_linux_amd64.tar.gz | tar xz
-            sudo mv lazycap /usr/local/bin/
-            ```
-
-            **Go Install:**
-            ```bash
-            go install github.com/icarus-itcs/lazycap@latest
-            ```
-
-            **Homebrew:**
-            ```bash
-            brew tap icarus-itcs/lazycap https://github.com/icarus-itcs/lazycap
-            brew install lazycap
-            ```
-
-  update-formula:
-    needs: [tag, release]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: main
-
-      - name: Update Homebrew Formula
-        run: |
-          VERSION=${{ needs.tag.outputs.version }}
-          SHA256=$(curl -sL "https://github.com/${{ github.repository }}/archive/refs/tags/${VERSION}.tar.gz" | sha256sum | cut -d' ' -f1)
-
-          sed -i "s|url \"https://github.com/.*/archive/refs/tags/.*\.tar\.gz\"|url \"https://github.com/${{ github.repository }}/archive/refs/tags/${VERSION}.tar.gz\"|" Formula/lazycap.rb
-          sed -i "s|sha256 \".*\"|sha256 \"${SHA256}\"|" Formula/lazycap.rb
+          # Check if tag already exists
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "Tag $VERSION already exists, skipping release"
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VERSION" -m "Release $VERSION"
+          git push origin "$VERSION"
+          echo "skip=false" >> $GITHUB_OUTPUT
+
+      - name: Run GoReleaser
+        if: steps.tag.outputs.skip != 'true'
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Homebrew Formula
+        if: steps.tag.outputs.skip != 'true'
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+
+          # Download the source tarball and calculate SHA256
+          TARBALL_URL="https://github.com/${{ github.repository }}/archive/refs/tags/${VERSION}.tar.gz"
+          SHA256=$(curl -sL "$TARBALL_URL" | sha256sum | cut -d' ' -f1)
+
+          echo "Tarball URL: $TARBALL_URL"
+          echo "SHA256: $SHA256"
+
+          # Update the formula
+          sed -i "s|url \"https://github.com/.*/archive/refs/tags/.*\.tar\.gz\"|url \"$TARBALL_URL\"|" Formula/lazycap.rb
+          sed -i "s|sha256 \".*\"|sha256 \"$SHA256\"|" Formula/lazycap.rb
+
+          # Commit and push
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Formula/lazycap.rb
-          git commit -m "chore: Update Homebrew formula to ${VERSION}" || echo "No changes"
+          git diff --staged --quiet || git commit -m "chore(release): update Homebrew formula to ${VERSION}"
           git push origin main

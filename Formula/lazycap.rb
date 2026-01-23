@@ -1,3 +1,7 @@
+# Homebrew formula for lazycap
+# This file is automatically updated by the release workflow
+# Manual changes to url/sha256 will be overwritten
+
 class Lazycap < Formula
   desc "Terminal UI dashboard for Capacitor mobile app development"
   homepage "https://github.com/icarus-itcs/lazycap"
@@ -19,6 +23,7 @@ class Lazycap < Formula
   end
 
   test do
-    assert_match version.to_s, shell_output("#{bin}/lazycap --version")
+    # The TUI requires a terminal, so just verify the binary runs
+    assert_match version.to_s, shell_output("#{bin}/lazycap version 2>&1", 0)
   end
 end

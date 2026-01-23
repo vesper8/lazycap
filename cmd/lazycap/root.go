@@ -128,7 +128,7 @@ func runDemoMode() error {
 	appContext.SetProject(project)
 
 	// Create model with demo devices
-	model := ui.NewDemoModel(project, pluginManager, appContext)
+	model := ui.NewDemoModel(project, pluginManager, appContext, appVersion)
 	p := tea.NewProgram(model, tea.WithAltScreen())
 
 	if _, err := p.Run(); err != nil {
@@ -167,7 +167,7 @@ func runApp() error {
 	appContext.SetProject(project)
 
 	// Initialize and run the TUI with plugin support (pass all discovered projects)
-	model := ui.NewModelWithProjects(projects, pluginManager, appContext)
+	model := ui.NewModelWithProjects(projects, pluginManager, appContext, appVersion)
 	p := tea.NewProgram(model, tea.WithAltScreen())
 
 	// Handle graceful shutdown for plugins

@@ -111,6 +111,7 @@ lazycap
 | `o` | Open in native IDE |
 | `x` | Kill selected process |
 | `R` | Refresh device list |
+| `U` | Update lazycap (when update available) |
 | `d` | Open debug tools |
 | `P` | Open plugins panel |
 | `,` | Open settings |
