@@ -5,8 +5,8 @@
 class Lazycap < Formula
   desc "Terminal UI dashboard for Capacitor mobile app development"
   homepage "https://github.com/icarus-itcs/lazycap"
-  url "https://github.com/icarus-itcs/lazycap/archive/refs/tags/v0.4.0.tar.gz"
-  sha256 "9b207c2204c0a98338ea13a2fe8404772fadcd8607114ae4b7d1fc6d6c23f9d7"
+  url "https://github.com/icarus-itcs/lazycap/archive/refs/tags/v0.5.1.tar.gz"
+  sha256 "d890e74e6b94df322e6afbb70b01c660de8b980b93fcc0401938522610bfa6bf"
   license "MIT"
   head "https://github.com/icarus-itcs/lazycap.git", branch: "main"
 
