@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/icarus-itcs/lazycap/internal/plugin"
@@ -425,13 +426,30 @@ func (p *MCPPlugin) handleToolsList() map[string]interface{} {
 		},
 		{
 			Name:        "get_all_logs",
-			Description: "Get logs from all processes. Use this to diagnose build errors, runtime issues, or understand what happened across all operations.",
+			Description: "Get logs from processes with optional filtering. Use this to diagnose build errors, runtime issues, or understand what happened. Supports filtering by process type, status, and text search.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
+					"type": map[string]interface{}{
+						"type":        "string",
+						"description": "Filter by process type: 'build', 'sync', 'run', 'web', or a plugin name like 'firebase'. Partial match supported.",
+					},
+					"status": map[string]interface{}{
+						"type":        "string",
+						"enum":        []string{"running", "success", "failed", "canceled"},
+						"description": "Filter by process status",
+					},
+					"search": map[string]interface{}{
+						"type":        "string",
+						"description": "Search for text pattern in logs (case-insensitive). Use to find specific errors or messages.",
+					},
+					"errors_only": map[string]interface{}{
+						"type":        "boolean",
+						"description": "Only return log lines containing error indicators (error, Error, ERROR, failed, Failed, FAILED, exception, panic, fatal)",
+					},
 					"tail": map[string]interface{}{
 						"type":        "integer",
-						"description": "Number of lines to return per process (default: all lines)",
+						"description": "Number of lines to return per process (default: all lines). Use to limit output size.",
 					},
 				},
 			},
@@ -643,20 +661,69 @@ func (p *MCPPlugin) toolGetLogs(args map[string]interface{}) (interface{}, *MCPE
 
 func (p *MCPPlugin) toolGetAllLogs(args map[string]interface{}) (interface{}, *MCPError) {
 	allLogs := p.ctx.GetAllLogs()
+	processes := p.ctx.GetProcesses()
 
-	// Apply tail limit if specified
+	// Parse filter arguments
+	typeFilter, _ := args["type"].(string)
+	statusFilter, _ := args["status"].(string)
+	searchPattern, _ := args["search"].(string)
+	errorsOnly, _ := args["errors_only"].(bool)
 	tail := 0
 	if t, ok := args["tail"].(float64); ok {
 		tail = int(t)
 	}
 
-	// Build result with process info and logs
-	processes := p.ctx.GetProcesses()
+	// Error patterns for errors_only filter
+	errorPatterns := []string{"error", "Error", "ERROR", "failed", "Failed", "FAILED", "exception", "Exception", "panic", "Panic", "PANIC", "fatal", "Fatal", "FATAL"}
+
+	// Build result with filtered processes and logs
 	result := make(map[string]interface{})
 
 	for _, proc := range processes {
+		// Filter by type (partial match on process name)
+		if typeFilter != "" {
+			if !containsIgnoreCase(proc.Name, typeFilter) && !containsIgnoreCase(proc.Command, typeFilter) {
+				continue
+			}
+		}
+
+		// Filter by status
+		if statusFilter != "" && proc.Status != statusFilter {
+			continue
+		}
+
 		logs, exists := allLogs[proc.ID]
 		if !exists {
+			continue
+		}
+
+		// Apply search filter
+		if searchPattern != "" {
+			filtered := make([]string, 0)
+			for _, line := range logs {
+				if containsIgnoreCase(line, searchPattern) {
+					filtered = append(filtered, line)
+				}
+			}
+			logs = filtered
+		}
+
+		// Apply errors_only filter
+		if errorsOnly {
+			filtered := make([]string, 0)
+			for _, line := range logs {
+				for _, pattern := range errorPatterns {
+					if strings.Contains(line, pattern) {
+						filtered = append(filtered, line)
+						break
+					}
+				}
+			}
+			logs = filtered
+		}
+
+		// Skip processes with no matching logs after filtering
+		if len(logs) == 0 && (searchPattern != "" || errorsOnly) {
 			continue
 		}
 
@@ -674,6 +741,11 @@ func (p *MCPPlugin) toolGetAllLogs(args map[string]interface{}) (interface{}, *M
 	}
 
 	return map[string]interface{}{"content": []map[string]interface{}{{"type": "text", "text": toJSON(result)}}}, nil
+}
+
+// containsIgnoreCase checks if s contains substr (case-insensitive)
+func containsIgnoreCase(s, substr string) bool {
+	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }
 
 func (p *MCPPlugin) toolKillProcess(args map[string]interface{}) (interface{}, *MCPError) {

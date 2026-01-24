@@ -240,9 +240,18 @@ lazycap exposes functionality via the [Model Context Protocol](https://modelcont
 | `build` | Build web assets |
 | `open_ide` | Open Xcode or Android Studio |
 | `get_project` | Get project information |
-| `get_all_logs` | Get logs from all processes (for diagnosing errors) |
+| `get_all_logs` | Get logs with filtering (type, status, search, errors_only) |
 | `get_debug_actions` | List debug/cleanup actions |
 | `run_debug_action` | Execute a debug action |
+
+**Log Filtering Options:**
+
+The `get_all_logs` tool supports powerful filtering:
+- `type` — Filter by process type: "build", "sync", "run", "web", or plugin name like "firebase"
+- `status` — Filter by status: "running", "success", "failed", "canceled"
+- `search` — Search for text in logs (case-insensitive)
+- `errors_only` — Only return lines containing error indicators
+- `tail` — Limit lines per process
 
 **Example prompts for Claude:**
 
@@ -251,6 +260,10 @@ lazycap exposes functionality via the [Model Context Protocol](https://modelcont
 > "Sync the project and open it in Xcode"
 
 > "The build failed, check the logs and fix the error"
+
+> "Show me only the error lines from the last build"
+
+> "What's happening with the firebase emulator?"
 
 > "Clear all caches and do a fresh install"
 
