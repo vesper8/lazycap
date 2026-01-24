@@ -485,7 +485,7 @@ func handleToolsList(ctx *mcpContext) map[string]interface{} {
 	// Filter tools based on settings
 	var tools []map[string]interface{}
 	for _, tool := range allTools {
-		toolName := tool["name"].(string)
+		toolName, _ := tool["name"].(string)
 		if ctx.settings.IsMCPToolEnabled(toolName) {
 			tools = append(tools, tool)
 		}

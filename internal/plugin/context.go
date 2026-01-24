@@ -56,7 +56,7 @@ type ProcessInfo struct {
 	ID        string
 	Name      string
 	Command   string
-	Status    string // "running", "success", "failed", "cancelled"
+	Status    string // "running", "success", "failed", "canceled"
 	StartTime int64
 	EndTime   int64
 }

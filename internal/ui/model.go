@@ -333,7 +333,7 @@ func NewModelWithPlugins(project *cap.Project, pluginMgr *plugin.Manager, appCtx
 					case ProcessFailed:
 						status = "failed"
 					case ProcessCancelled:
-						status = "cancelled"
+						status = "canceled"
 					default:
 						status = "unknown"
 					}

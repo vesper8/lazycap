@@ -6,41 +6,28 @@ run:
   timeout: 5m
 
 linters:
-  # Start with defaults and add a few extras
   default: standard
   enable:
     - misspell
     - unconvert
     - unparam
     - prealloc
+  settings:
+    misspell:
+      locale: US
+    errcheck:
+      check-type-assertions: true
+      check-blank: false
 
 formatters:
   enable:
     - gofmt
     - goimports
-
-linters-settings:
-  misspell:
-    locale: US
-  errcheck:
-    check-type-assertions: true
-    check-blank: false
-
-formatters-settings:
-  goimports:
-    local-prefixes:
-      - github.com/icarus-itcs/lazycap
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/icarus-itcs/lazycap
 
 issues:
-  exclude-rules:
-    # Ignore certain issues in test files
-    - path: _test\.go
-      linters:
-        - errcheck
-        - unparam
-    # Ignore certain issues in main.go
-    - path: main\.go
-      linters:
-        - gocyclo
   max-issues-per-linter: 0
   max-same-issues: 0
