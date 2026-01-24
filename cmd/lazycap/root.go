@@ -721,7 +721,7 @@ func handleGetAllLogs(args map[string]interface{}) (interface{}, *mcpError) {
 	errorPatterns := []string{"error", "Error", "ERROR", "failed", "Failed", "FAILED", "exception", "Exception", "panic", "Panic", "fatal", "Fatal"}
 
 	// Apply filters
-	var filtered []string
+	var filtered []string //nolint:prealloc // size unknown after filtering
 	for _, line := range lines {
 		if line == "" {
 			continue
