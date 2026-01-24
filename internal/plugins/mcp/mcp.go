@@ -424,6 +424,19 @@ func (p *MCPPlugin) handleToolsList() map[string]interface{} {
 			},
 		},
 		{
+			Name:        "get_all_logs",
+			Description: "Get logs from all processes. Use this to diagnose build errors, runtime issues, or understand what happened across all operations.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"tail": map[string]interface{}{
+						"type":        "integer",
+						"description": "Number of lines to return per process (default: all lines)",
+					},
+				},
+			},
+		},
+		{
 			Name:        "kill_process",
 			Description: "Kill a running process",
 			InputSchema: map[string]interface{}{
@@ -525,6 +538,8 @@ func (p *MCPPlugin) handleToolsCall(params json.RawMessage) (interface{}, *MCPEr
 		return p.toolGetProcesses()
 	case "get_logs":
 		return p.toolGetLogs(call.Arguments)
+	case "get_all_logs":
+		return p.toolGetAllLogs(call.Arguments)
 	case "kill_process":
 		return p.toolKillProcess(call.Arguments)
 	case "get_debug_actions":
@@ -624,6 +639,41 @@ func (p *MCPPlugin) toolGetLogs(args map[string]interface{}) (interface{}, *MCPE
 	}
 	logs := p.ctx.GetProcessLogs(processID)
 	return map[string]interface{}{"content": []map[string]interface{}{{"type": "text", "text": toJSON(logs)}}}, nil
+}
+
+func (p *MCPPlugin) toolGetAllLogs(args map[string]interface{}) (interface{}, *MCPError) {
+	allLogs := p.ctx.GetAllLogs()
+
+	// Apply tail limit if specified
+	tail := 0
+	if t, ok := args["tail"].(float64); ok {
+		tail = int(t)
+	}
+
+	// Build result with process info and logs
+	processes := p.ctx.GetProcesses()
+	result := make(map[string]interface{})
+
+	for _, proc := range processes {
+		logs, exists := allLogs[proc.ID]
+		if !exists {
+			continue
+		}
+
+		// Apply tail limit
+		if tail > 0 && len(logs) > tail {
+			logs = logs[len(logs)-tail:]
+		}
+
+		result[proc.ID] = map[string]interface{}{
+			"name":    proc.Name,
+			"status":  proc.Status,
+			"command": proc.Command,
+			"logs":    logs,
+		}
+	}
+
+	return map[string]interface{}{"content": []map[string]interface{}{{"type": "text", "text": toJSON(result)}}}, nil
 }
 
 func (p *MCPPlugin) toolKillProcess(args map[string]interface{}) (interface{}, *MCPError) {

@@ -240,6 +240,7 @@ lazycap exposes functionality via the [Model Context Protocol](https://modelcont
 | `build` | Build web assets |
 | `open_ide` | Open Xcode or Android Studio |
 | `get_project` | Get project information |
+| `get_all_logs` | Get logs from all processes (for diagnosing errors) |
 | `get_debug_actions` | List debug/cleanup actions |
 | `run_debug_action` | Execute a debug action |
 
@@ -248,6 +249,8 @@ lazycap exposes functionality via the [Model Context Protocol](https://modelcont
 > "Run the app on my iPhone simulator with live reload"
 
 > "Sync the project and open it in Xcode"
+
+> "The build failed, check the logs and fix the error"
 
 > "Clear all caches and do a fresh install"
 
