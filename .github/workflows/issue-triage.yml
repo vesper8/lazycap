@@ -1,0 +1,60 @@
+# Issue triage workflow using Claude Code Action
+# Automatically analyzes new issues, applies labels, and provides initial response
+
+name: Issue Triage
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  triage:
+    name: Analyze and Label Issue
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Triage with Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            You are triaging a GitHub issue for lazycap, a CLI tool for Capacitor/Ionic mobile app development.
+
+            lazycap provides:
+            - Device/emulator management (iOS Simulators, Android Emulators)
+            - Capacitor build and sync commands
+            - Firebase Emulator Suite integration
+            - MCP server for AI assistant integration
+            - Live reload and hot reloading
+
+            Analyze this issue and:
+
+            1. **Classify the issue type:**
+               - `bug` - Something in lazycap is broken
+               - `enhancement` - Feature request or improvement to lazycap
+               - `question` - User needs help or clarification
+               - `external` - Issue is with a third-party tool (Android SDK, Xcode, Firebase CLI, Capacitor, macOS, etc.), not lazycap itself
+               - `documentation` - Missing or unclear docs
+
+            2. **Apply appropriate labels** using the GitHub API. Common labels:
+               - Type: `bug`, `enhancement`, `question`, `documentation`
+               - Status: `external`, `needs-info`, `duplicate`
+               - Area: `firebase`, `android`, `ios`, `mcp`
+
+            3. **Post a helpful comment** that:
+               - Acknowledges the issue
+               - If it's external (like Android SDK or macOS Gatekeeper issues), explain this kindly and provide a solution
+               - If it's a bug, confirm you've identified the issue
+               - If more info is needed, ask specific questions
+               - Keep it friendly and concise
+
+            Important context:
+            - macOS Gatekeeper warnings about "emulator" are Android SDK issues, not lazycap bugs
+            - Firebase port conflicts are common and lazycap has built-in port clearing
+            - Device detection uses `xcrun simctl` (iOS), `adb` (Android), and `emulator` (Android AVDs)
